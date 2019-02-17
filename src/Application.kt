@@ -3,6 +3,7 @@ package `in`.vilik
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
+import io.ktor.application.log
 import io.ktor.features.*
 import io.ktor.gson.gson
 import io.ktor.http.HttpMethod
@@ -35,14 +36,16 @@ fun Application.module() {
     }
 
     install(StatusPages) {
-        exception<Exception> {
+        exception<Exception> { cause ->
+            log.error("wut", cause)
             call.respond(HttpStatusCode.InternalServerError)
         }
     }
 
     routing {
         get("/hello") {
-            call.respond(mapOf("hello" to "world"))
+            val contents = RecipesRepository.getContentsFrom("/metadata")
+            call.respond(contents)
         }
     }
 }

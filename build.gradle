@@ -5,11 +5,13 @@ buildscript {
     
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
     }
 }
 
 apply plugin: 'kotlin'
 apply plugin: 'application'
+apply plugin: 'kotlinx-serialization'
 
 group 'recipes-api'
 version '0.0.1'
@@ -26,6 +28,7 @@ repositories {
     mavenLocal()
     jcenter()
     maven { url 'https://kotlin.bintray.com/ktor' }
+    maven { url "https://kotlin.bintray.com/kotlinx" }
 }
 
 dependencies {
@@ -36,5 +39,8 @@ dependencies {
     compile "io.ktor:ktor-server-core:$ktor_version"
     compile "io.ktor:ktor-server-host-common:$ktor_version"
     compile "io.ktor:ktor-gson:$ktor_version"
+    compile "io.ktor:ktor-client-apache:$ktor_version"
+    compile "io.ktor:ktor-client-json:$ktor_version"
+    compile "io.ktor:ktor-client-gson:$ktor_version"
     testCompile "io.ktor:ktor-server-tests:$ktor_version"
 }
