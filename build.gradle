@@ -42,5 +42,6 @@ dependencies {
     compile "io.ktor:ktor-client-apache:$ktor_version"
     compile "io.ktor:ktor-client-json:$ktor_version"
     compile "io.ktor:ktor-client-gson:$ktor_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     testCompile "io.ktor:ktor-server-tests:$ktor_version"
 }
