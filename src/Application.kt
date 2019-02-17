@@ -43,9 +43,13 @@ fun Application.module() {
     }
 
     routing {
-        get("/hello") {
-            val contents = RecipesRepository.getContentsFrom("/metadata")
-            call.respond(contents)
+        get("/recipes") {
+            call.respond(Recipes.findAll())
+        }
+
+        get("/recipes/{id}") {
+            val id = call.parameters["id"]!!
+            call.respond(Recipes.findById(id))
         }
     }
 }
