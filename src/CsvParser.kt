@@ -5,9 +5,19 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.primaryConstructor
 
 data class CsvFile(
-    val headerRow: List<String>,
-    val contentRows: List<List<String>>
+    private val headerRow: List<String>,
+    private val contentRows: List<List<String>>
 ) {
+    val rows: List<Map<String, String>>
+        get() = contentRows.map { row ->
+            val pairs = row.mapIndexed { index: Int, value: String ->
+                val fieldName = headerRow[index]
+                fieldName to value
+            }
+
+            pairs.toMap()
+        }
+
     companion object {
         fun fromString(csv: String, delimiter: String = ","): CsvFile {
             val lines = csv.lines()
@@ -42,22 +52,8 @@ object CsvParser {
                 csvParamNameToClassParam[csvParamName] = it
             }
 
-        val indexToCsvParamName: MutableMap<Int, String> = mutableMapOf()
-
-        csvFile.headerRow.forEachIndexed { index: Int, csvParamName: String ->
-            indexToCsvParamName[index] = csvParamName
-        }
-
-        return csvFile.contentRows.map { row ->
-            val csvParamNameToValue: MutableMap<String, String> = mutableMapOf()
-
-            indexToCsvParamName.forEach {
-                val csvParamIndex = it.key
-                val csvParamName = it.value
-                csvParamNameToValue[csvParamName] = row[csvParamIndex]
-            }
-
-            val classParamToValue: Map<KParameter, String> = csvParamNameToValue
+        return csvFile.rows.map { row ->
+            val classParamToValue: Map<KParameter, String> = row
                 .mapKeys { csvParamNameToClassParam[it.key]!! }
 
             T::class.primaryConstructor!!.callBy(classParamToValue)
