@@ -4,6 +4,24 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.primaryConstructor
 
+data class CsvFile(
+    val headerRow: List<String>,
+    val contentRows: List<List<String>>
+) {
+    companion object {
+        fun fromString(csv: String, delimiter: String = ","): CsvFile {
+            val lines = csv.lines()
+            val headerRow: List<String> = lines.first().split(delimiter)
+            val contentRows: List<List<String>> = lines
+                .subList(1, lines.size)
+                .filter { it.isNotBlank() }
+                .map { it.split(delimiter) }
+
+            return CsvFile(headerRow, contentRows)
+        }
+    }
+}
+
 annotation class CsvField(
     val value: String
 )
@@ -13,12 +31,7 @@ object CsvParser {
         csv: String,
         delimiter: String = ","
     ): List<T> {
-        val lines = csv.lines()
-        val header = lines.first().split(delimiter)
-        val contentRows = lines
-            .subList(1, lines.size)
-            .filter { it.isNotBlank() }
-            .map { it.split(delimiter) }
+        val csvFile = CsvFile.fromString(csv)
 
         val csvParamNameToClassParam: MutableMap<String, KParameter> = mutableMapOf()
 
@@ -31,11 +44,11 @@ object CsvParser {
 
         val indexToCsvParamName: MutableMap<Int, String> = mutableMapOf()
 
-        header.forEachIndexed { index: Int, csvParamName: String ->
+        csvFile.headerRow.forEachIndexed { index: Int, csvParamName: String ->
             indexToCsvParamName[index] = csvParamName
         }
 
-        return contentRows.map { row ->
+        return csvFile.contentRows.map { row ->
             val csvParamNameToValue: MutableMap<String, String> = mutableMapOf()
 
             indexToCsvParamName.forEach {
