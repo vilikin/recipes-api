@@ -1,45 +1,62 @@
 package `in`.vilik
 
-import com.google.gson.annotations.SerializedName
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.apache.Apache
-import io.ktor.client.features.json.GsonSerializer
-import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.request.get
+import java.time.LocalDateTime
 
-data class ContentItem(
-    val name: String,
-    val path: String,
-    val type: String,
-    @SerializedName("download_url")
-    val downloadUrl: String?
-)
+object Cache {
+    private data class CacheItem(
+        val cachedAt: LocalDateTime,
+        val content: String
+    )
+
+    private val cache: MutableMap<String, CacheItem> = mutableMapOf()
+    private val cacheEntryInvalidIfOlderThan: LocalDateTime
+        get() = LocalDateTime.now().minusMinutes(5)
+
+    fun put(path: String, content: String) {
+        cache[path] = CacheItem(LocalDateTime.now(), content)
+    }
+
+    fun put(pair: Pair<String, String>) {
+        cache[pair.first] = CacheItem(LocalDateTime.now(), pair.second)
+    }
+
+    fun clear() {
+        cache.clear()
+    }
+
+    operator fun get(path: String): String? =
+        cache[path]?.content
+
+    operator fun contains(path: String): Boolean =
+        path in cache && isCacheStillValid(path)
+
+    private fun isCacheStillValid(path: String): Boolean =
+        cache[path]?.cachedAt?.isAfter(cacheEntryInvalidIfOlderThan) ?: false
+}
 
 open class GithubRepository(
     userName: String,
     repositoryName: String
 ) {
-    private val rootApiUrl = "https://api.github.com/repos/$userName/$repositoryName"
     private val rootRawApiUrl = "https://raw.githubusercontent.com/$userName/$repositoryName/master"
 
-    suspend fun getContentsFrom(path: String): List<ContentItem> {
-        return get("$rootApiUrl/contents/$path")
-    }
-
     suspend fun getRawFileContent(path: String): String =
-        get("$rootRawApiUrl/$path")
+        if (path in Cache) {
+            Cache[path]!!
+        } else {
+            val rawFileContent = get("$rootRawApiUrl/$path")
+            Cache.put(path to rawFileContent)
+            rawFileContent
+        }
 
     fun getRawFileUrl(path: String) = "$rootRawApiUrl/$path"
 
-    suspend inline fun <reified T> get(path: String): T {
-        val client = HttpClient(Apache) {
-            install(JsonFeature) {
-                serializer = GsonSerializer()
-            }
-        }
-
-        val response: T = client.get(path)
-
+    suspend fun get(path: String): String {
+        val client = HttpClient(Apache)
+        val response: String = client.get(path)
         client.close()
 
         return response

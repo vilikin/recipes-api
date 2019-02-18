@@ -9,6 +9,8 @@ import io.ktor.gson.gson
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
+import io.ktor.response.respondText
+import io.ktor.routing.delete
 import io.ktor.routing.get
 import io.ktor.routing.routing
 import org.slf4j.event.Level
@@ -50,6 +52,11 @@ fun Application.module() {
         get("/recipes/{id}") {
             val id = call.parameters["id"]!!
             call.respond(Recipes.findById(id))
+        }
+
+        delete("/cache") {
+            Cache.clear()
+            call.respondText("Cache cleared")
         }
     }
 }
