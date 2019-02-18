@@ -1,5 +1,9 @@
 package `in`.vilik
 
+import java.nio.charset.Charset
+import java.util.*
+
+class NoMatchingRecipeException : Exception("Could not find recipe with the specified id")
 class NoMatchingCategoryException : Exception("Category of a recipe does not exist in categories.csv")
 
 object RecipesRepository : GithubRepository(
@@ -15,6 +19,7 @@ data class Category(
 )
 
 data class RecipeMetadata(
+    val id: String,
     val name: String,
     @CsvField("category_id") val categoryId: String,
     @CsvField("image_file_name") val imageFileName: String,
@@ -22,19 +27,37 @@ data class RecipeMetadata(
 ) {
     fun toRecipeWithoutContent(categories: List<Category>) =
             RecipeWithoutContent(
+                id,
                 name,
                 RecipesRepository.getRawFileUrl("images/$imageFileName"),
                 categories.find { it.id == categoryId } ?: throw NoMatchingCategoryException()
             )
+
+    suspend fun toRecipeWithContent(categories: List<Category>) =
+            RecipeWithContent(
+                id,
+                name,
+                RecipesRepository.getRawFileUrl("images/$imageFileName"),
+                categories.find { it.id == categoryId } ?: throw NoMatchingCategoryException(),
+                RecipesRepository.getRawFileContent("recipes/$recipeFileName").toBase64()
+            )
+}
+
+private fun String.toBase64(): String {
+    val encoder = Base64.getEncoder()
+    val base64Bytes = encoder.encode(this.toByteArray())
+    return base64Bytes.toString(Charset.forName("UTF-8"))
 }
 
 data class RecipeWithoutContent(
+    val id: String,
     val name: String,
     val imageUrl: String,
     val category: Category
 )
 
 data class RecipeWithContent(
+    val id: String,
     val name: String,
     val imageUrl: String,
     val category: Category,
@@ -50,12 +73,13 @@ object Recipes {
     }
 
     suspend fun findById(id: String): RecipeWithContent {
-        return RecipeWithContent(
-            "name",
-            "image.png",
-            Category(id = "soups", name = "Soups", description = "test", imageFileName = "test"),
-            "wheuhqweuhruywhruyw"
-        )
+        val categories = getAllCategories()
+        val recipes = getAllRecipeMetadata()
+
+        return recipes
+            .find { it.id == id }
+            ?.toRecipeWithContent(categories)
+            ?: throw NoMatchingRecipeException()
     }
 
     private suspend fun getAllRecipeMetadata(): List<RecipeMetadata> {
