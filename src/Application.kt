@@ -38,7 +38,7 @@ fun Application.module() {
     }
 
     install(StatusPages) {
-        exception<Exception> { cause ->
+        exception<Throwable> { cause ->
             log.error("wut", cause)
             call.respond(HttpStatusCode.InternalServerError)
         }
