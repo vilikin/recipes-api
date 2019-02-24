@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: './Dockerfile'
     command: './gradlew run'
+    environment:
+      _JAVA_OPTIONS: -Xms256m -Xmx512m
     ports:
       - '10100:8080' # to machine port : from container port
     working_dir: '/app'
