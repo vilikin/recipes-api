@@ -5,7 +5,17 @@ services:
     build:
       context: .
       dockerfile: './Dockerfile'
-    command: 'java -jar ./jar/recipes-api-0.0.1-all.jar'
+    command: './gradlew run'
+    ports:
+      - '10100:8080' # to machine port : from container port
+    working_dir: '/app'
+    volumes:
+      - '.:/app'
+  jar:
+    build:
+      context: .
+      dockerfile: './Dockerfile-jar'
+    command: 'java -jar ./jar/recipes-api.jar'
     ports:
       - '10100:8080' # to machine port : from container port
     working_dir: '/app'
